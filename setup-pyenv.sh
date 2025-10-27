@@ -1,21 +1,19 @@
 #!/bin/bash
 set -e
 
-echo "=== CÀI pyenv + Python 3.12 ==="
+echo "CÀI pyenv + Python 3.11, 3.12, 3.13..."
 
-# Cài pyenv nếu chưa có
 if [ ! -d "$HOME/.pyenv" ]; then
-    echo "Cài pyenv..."
     curl https://pyenv.run | bash
 fi
 
-# Cài Python 3.12.7 nếu chưa có
-if ! ~/.pyenv/bin/pyenv versions | grep -q "3.12.7"; then
-    echo "Cài Python 3.12.7..."
-    ~/.pyenv/bin/pyenv install 3.12.7
-fi
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
 
-# Dùng Python 3.12.7
-~/.pyenv/bin/pyenv global 3.12.7
+pyenv install 3.11.9 -s
+pyenv install 3.12.7 -s
+pyenv install 3.13.0 -s
 
-echo "Python 3.12.7 sẵn sàng!"
+echo "Python 3.11, 3.12, 3.13 đã sẵn sàng!"
