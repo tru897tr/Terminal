@@ -31,7 +31,6 @@ def keep_alive():
                 time.sleep(300)
         threading.Thread(target=ping, daemon=True).start()
 
-# === HTML + Ô NHẬP + NÚT GỬI ===
 HTML = '''
 <!DOCTYPE html>
 <html>
@@ -55,7 +54,7 @@ HTML = '''
 <body>
     <div id="output"></div>
     <div id="input-area">
-        <input type="text" id="cmd" placeholder="ls, python3.12 CTOOL.py, pip install..." autofocus>
+        <input type="text" id="cmd" placeholder="python CTOOL.py, pip install..." autofocus>
         <button id="send">GỬI</button>
     </div>
 
@@ -88,13 +87,11 @@ HTML = '''
         });
 
         socket.on('connect', () => {
-            write('\\nCTOOL TERMINAL PRO - HỖ TRỢ TẤT CẢ LỆNH!\\n', 'info');
-            write('Dùng: python3.12 CTOOL.py | pip install | curl | run webhost | ps | stop\\n', 'info');
+            write('\\nCTOOL TERMINAL PRO - CHẠY MỌI TOOL!\\n', 'info');
+            write('DÙNG: python CTOOL.py | pip install | curl | run webhost\\n', 'info');
             write('LỆNH MẪU:\\n', 'info');
             write('  curl -o CTOOL.py https://raw.githubusercontent.com/C-Dev7929/Tools/refs/heads/main/main-xw.py\\n', 'info');
-            write('  python3.12 CTOOL.py\\n', 'info');
-            write('  pip install requests\\n', 'info');
-            write('  run webhost\\n', 'info');
+            write('  python CTOOL.py\\n', 'info');
             input.focus();
         });
 
@@ -110,14 +107,13 @@ HTML = '''
 def index():
     return render_template_string(HTML)
 
-# === SHELL ===
 master_fd = None
 proc = None
 
 def start_shell():
     global master_fd, proc
     master_fd, slave_fd = pty.openpty()
-    # DÙNG bash + source .bashrc để dùng python3.12
+    # DÙNG bash + load .bashrc để có python3.12
     proc = subprocess.Popen(
         ['/bin/bash', '--rcfile', '/opt/render/project/src/.bashrc'],
         stdin=slave_fd, stdout=slave_fd, stderr=slave_fd,
@@ -150,7 +146,6 @@ def handle_command(cmd):
         if name == "webhost":
             msg = manager.start("WebHost", "python webhost.py")
             socketio.emit('info', msg)
-            socketio.emit('info', "Web chạy tại: http://localhost:5000")
         else:
             socketio.emit('error', "Tool chưa có!")
     elif cmd.startswith("stop "):
