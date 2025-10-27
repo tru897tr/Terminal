@@ -1,4 +1,4 @@
-# server.py - Terminal Web + Eventlet (ổn định trên Render)
+# server.py - Terminal Web + eventlet + threading (ổn định Python 3.11)
 from flask import Flask, render_template_string
 from flask_socketio import SocketIO, emit
 import pty
@@ -11,8 +11,15 @@ import time
 import signal
 from shell import manager
 
+# === APP + SOCKETIO ===
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    async_mode='threading',  # DÙNG THREADING THAY EVENTLET
+    logger=False,
+    engineio_logger=False
+)
 
 # === KEEP ALIVE ===
 def keep_alive():
