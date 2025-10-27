@@ -1,19 +1,42 @@
 #!/bin/bash
 set -e
 
-echo "KÍCH HOẠT pyenv + python3.12..."
+echo "=== CÀI VÀ KÍCH HOẠT pyenv + Python 3.12 ==="
 
-# Load pyenv
+# === CÀI pyenv NẾU CHƯA CÓ ===
+if [ ! -d "$HOME/.pyenv" ]; then
+    echo "Cài pyenv..."
+    curl https://pyenv.run | bash
+fi
+
+# === CẬP NHẬT .bashrc ===
+cat > ~/.bashrc << 'EOF'
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
+pyenv global 3.12.7 2>/dev/null || true
+alias python="python3.12"
+alias pip="python3.12 -m pip"
+EOF
+
+# === KÍCH HOẠT pyenv ===
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
 eval "$(pyenv virtualenv-init -)"
 
-# Dùng Python 3.12
+# === CÀI Python 3.12.7 NẾU CHƯA CÓ ===
+if ! pyenv versions | grep -q "3.12.7"; then
+    echo "Cài Python 3.12.7..."
+    pyenv install 3.12.7
+fi
+
+# === DÙNG Python 3.12.7 ===
 pyenv global 3.12.7
 
-# Alias
-export PYTHON=python3.12
-export PIP="python3.12 -m pip"
+# === KIỂM TRA ===
+echo "Python version: $(python --version)"
+echo "pip version: $(pip --version | head -n1)"
 
-echo "python = $(python --version)"
+echo "=== pyenv SẴN SÀNG! ==="
