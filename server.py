@@ -1,4 +1,4 @@
-# server.py - Chạy ngầm + Dừng tất cả + Tải lại trạng thái
+# server.py - TỰ SỬA LỖI GÕ SAI + CHẠY NGẦM
 from flask import Flask, render_template_string
 from flask_socketio import SocketIO
 import pty
@@ -55,7 +55,7 @@ HTML = '''
 <body>
     <div id="output"></div>
     <div id="input-area">
-        <input type="text" id="cmd" placeholder="python3.12 CTOOL.py, pip install..." autofocus>
+        <input type="text" id="cmd" placeholder="python3.12 CTOOL.py (hoặc python 3.12)" autofocus>
         <button id="send">GỬI</button>
         <button id="stop-all">DỪNG TẤT CẢ & XÓA</button>
     </div>
@@ -97,12 +97,11 @@ HTML = '''
 
         socket.on('connect', () => {
             write('\\nCTOOL TERMINAL PRO - CHẠY NGẦM 24/24!\\n', 'info');
-            write('HỖ TRỢ: python3.11, python3.12, python3.13, pip, curl, run, ps, stop\\n', 'info');
+            write('HỖ TRỢ: python3.11, python3.12, python3.13\\n', 'info');
+            write('DÙNG: python3.12 CTOOL.py HOẶC python 3.12 CTOOL.py (tự sửa)\\n', 'info');
             write('LỆNH MẪU:\\n', 'info');
             write('  curl -o CTOOL.py https://raw.githubusercontent.com/C-Dev7929/Tools/refs/heads/main/main-xw.py\\n', 'info');
-            write('  python3.12 CTOOL.py\\n', 'info');
-            write('  ps  → Xem tiến trình chạy ngầm\\n', 'info');
-            write('  DỪNG TẤT CẢ → Xóa sạch\\n', 'info');
+            write('  python 3.12 CTOOL.py\\n', 'info');
             input.focus();
         });
 
@@ -129,7 +128,6 @@ def start_shell():
         bufsize=0, preexec_fn=os.setsid, cwd='/opt/render/project/src'
     )
 
-    # Gửi lệnh khởi tạo Python
     init_cmds = [
         'export PYENV_ROOT="$HOME/.pyenv"',
         'export PATH="$PYENV_ROOT/bin:$PATH"',
@@ -162,6 +160,20 @@ def handle_command(cmd):
     cmd = cmd.strip()
     if not cmd: return
 
+    # TỰ SỬA LỖI GÕ SAI: python 3.12 → python3.12
+    if cmd.startswith("python 3.12 "):
+        fixed = cmd.replace("python 3.12 ", "python3.12 ")
+        socketio.emit('info', f"[FIX] Đã sửa: {cmd} → {fixed}")
+        cmd = fixed
+    elif cmd.startswith("python 3.11 "):
+        fixed = cmd.replace("python 3.11 ", "python3.11 ")
+        socketio.emit('info', f"[FIX] Đã sửa: {cmd} → {fixed}")
+        cmd = fixed
+    elif cmd.startswith("python 3.13 "):
+        fixed = cmd.replace("python 3.13 ", "python3.13 ")
+        socketio.emit('info', f"[FIX] Đã sửa: {cmd} → {fixed}")
+        cmd = fixed
+
     if cmd == "ps":
         socketio.emit('info', manager.list())
     elif cmd.startswith("run "):
@@ -192,7 +204,6 @@ def on_connect():
     global master_fd
     if master_fd is None:
         threading.Thread(target=start_shell).start()
-    # Tải lại trạng thái
     socketio.emit('info', manager.list())
 
 if __name__ == '__main__':
