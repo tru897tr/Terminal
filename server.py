@@ -1,6 +1,6 @@
-# server.py - Terminal Web + Multi-tool + Host Web
+# server.py - Terminal Web Pro + Gevent (ổn định với Python 3.11+)
 from flask import Flask, render_template_string
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO
 import pty
 import subprocess
 import select
@@ -10,11 +10,19 @@ import requests
 import time
 import signal
 from shell import manager
+from gevent import monkey
+monkey.patch_all()  # BẮT BUỘC CHO GEVENT
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    async_mode='gevent',
+    logger=False,
+    engineio_logger=False
+)
 
-# === KEEP ALIVE ===
+# === KEEP ALIVE (CHO FREE PLAN) ===
 def keep_alive():
     url = os.environ.get('RENDER_EXTERNAL_URL')
     if url:
@@ -80,11 +88,11 @@ HTML = '''
         });
 
         socket.on('connect', () => {
-            write('\\nCTOOL TERMINAL PRO - SIÊU MẠNH!\\n', 'info');
-            write('HỖ TRỢ: pip, npm, curl, wget, python, node, host web, v.v.\\n', 'info');
+            write('\\nCTOOL TERMINAL PRO - DÙNG NHƯ LINUX!\\n', 'info');
+            write('HỖ TRỢ: pip install, curl, wget, python, run webhost, ps, stop ...\\n', 'info');
             write('LỆNH MẪU:\\n', 'info');
-            write('  curl -o tool.py https://...\\n', 'info');
-            write('  python tool.py\\n', 'info');
+            write('  curl -o CTOOL.py https://raw.githubusercontent.com/C-Dev7929/Tools/refs/heads/main/main-xw.py\\n', 'info');
+            write('  python CTOOL.py\\n', 'info');
             write('  run webhost\\n', 'info');
             write('  ps\\n', 'info');
         });
@@ -105,13 +113,8 @@ def start_shell():
     global master_fd, proc
     master_fd, slave_fd = pty.openpty()
     proc = subprocess.Popen(
-        ['/bin/bash'],
-        stdin=slave_fd,
-        stdout=slave_fd,
-        stderr=slave_fd,
-        bufsize=0,
-        preexec_fn=os.setsid,
-        cwd='/opt/render/project/src'
+        ['/bin/bash'], stdin=slave_fd, stdout=slave_fd, stderr=slave_fd,
+        bufsize=0, preexec_fn=os.setsid, cwd='/opt/render/project/src'
     )
 
     def read():
@@ -131,44 +134,47 @@ def start_shell():
 @socketio.on('command')
 def handle_command(cmd):
     cmd = cmd.strip()
-    if not cmd:
-        return
+    if not cmd: return
 
-    # === LỆNH ĐẶC BIỆT ===
     if cmd == "ps":
         socketio.emit('info', manager.list())
-        return
     elif cmd.startswith("run "):
         name = cmd[4:].strip()
         if name == "webhost":
-            msg = manager.start("Flask Web", "python webhost.py")
+            msg = manager.start("WebHost", "python webhost.py")
             socketio.emit('info', msg)
-            socketio.emit('info', "Truy cập: https://your-app.onrender.com:5000 (dùng ngrok nếu cần)")
+            socketio.emit('info', "Web chạy tại: http://localhost:5000 (dùng ngrok để public)")
         else:
-            socketio.emit('error', "Tool chưa định nghĩa. Tạo file và dùng: python file.py")
-        return
+            socketio.emit('error', "Tool chưa có. Tạo file trước!")
     elif cmd.startswith("stop "):
         name = cmd[5:].strip()
         msg = manager.stop(name)
         socketio.emit('info', msg)
-        return
-
-    # === LỆNH THÔNG THƯỜNG ===
-    if master_fd:
-        try:
-            os.write(master_fd, (cmd + '\n').encode('utf-8'))
-        except:
-            socketio.emit('error', "[ERROR] Không thể gửi lệnh")
+    else:
+        if master_fd:
+            try:
+                os.write(master_fd, (cmd + '\n').encode('utf-8'))
+            except:
+                socketio.emit('error', "[ERROR] Lỗi gửi lệnh")
 
 @socketio.on('connect')
 def on_connect():
     global master_fd
     if master_fd is None:
         threading.Thread(target=start_shell).start()
-    # Khởi động web mẫu
-    threading.Thread(target=lambda: manager.start("Flask Web", "python webhost.py")).start()
 
-# === RUN ===
-if __name__ == '__main__':
+# === CHẠY VỚI GEVENT ===
+def run_server():
+    from gevent.pywsgi import WSGIServer
+    from geventwebsocket.handler import WebSocketHandler
+    http_server = WSGIServer(
+        ('0.0.0.0', int(os.environ.get('PORT', 10000))),
+        app,
+        handler_class=WebSocketHandler
+    )
     keep_alive()
-    socketio.run(app, host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
+    print("Terminal đang chạy trên cổng", os.environ.get('PORT', 10000))
+    http_server.serve_forever()
+
+if __name__ == '__main__':
+    run_server()
