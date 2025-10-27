@@ -1,4 +1,4 @@
-# server.py - HỖ TRỢ TẤT CẢ LỆNH + python3.12
+# server.py - CÀI pyenv TRONG SHELL → CHẠY python CTOOL.py
 from flask import Flask, render_template_string
 from flask_socketio import SocketIO
 import pty
@@ -113,13 +113,34 @@ proc = None
 def start_shell():
     global master_fd, proc
     master_fd, slave_fd = pty.openpty()
-    # DÙNG bash + load .bashrc để có python3.12
+
+    # === CÀI pyenv + python3.12 TRỰC TIẾP TRONG SHELL ===
+    init_commands = [
+        'export PYENV_ROOT="$HOME/.pyenv"',
+        'export PATH="$PYENV_ROOT/bin:$PATH"',
+        'eval "$(pyenv init -)"',
+        'eval "$(pyenv virtualenv-init -)"',
+        'if ! pyenv versions | grep -q "3.12.7"; then pyenv install 3.12.7; fi',
+        'pyenv global 3.12.7',
+        'alias python="python3.12"',
+        'alias pip="python3.12 -m pip"',
+        'echo "Python 3.12.7 đã sẵn sàng!"',
+        'python --version'
+    ]
+
+    # Tạo shell với lệnh khởi tạo
+    shell_cmd = '/bin/bash'
     proc = subprocess.Popen(
-        ['/bin/bash', '--rcfile', '/opt/render/project/src/.bashrc'],
-        stdin=slave_fd, stdout=slave_fd, stderr=slave_fd,
+        [shell_cmd], stdin=slave_fd, stdout=slave_fd, stderr=slave_fd,
         bufsize=0, preexec_fn=os.setsid, cwd='/opt/render/project/src'
     )
 
+    # Gửi lệnh khởi tạo
+    for cmd in init_commands:
+        os.write(master_fd, (cmd + '\n').encode('utf-8'))
+        time.sleep(0.5)
+
+    # Đọc output
     def read():
         while True:
             try:
