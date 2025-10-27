@@ -1,4 +1,4 @@
-# server.py - Terminal Web + eventlet + threading + allow_unsafe_werkzeug
+# server.py - Terminal Web + eventlet + WebSocket thật (gõ lệnh mượt)
 from flask import Flask, render_template_string
 from flask_socketio import SocketIO, emit
 import pty
@@ -11,14 +11,14 @@ import time
 import signal
 from shell import manager
 
-# === APP + SOCKETIO ===
+# === APP + SOCKETIO (DÙNG EVENTLET) ===
 app = Flask(__name__)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    async_mode='threading',
-    logger=False,
-    engineio_logger=False
+    async_mode='eventlet',  # BẮT BUỘC DÙNG EVENTLET
+    logger=True,
+    engineio_logger=True
 )
 
 # === KEEP ALIVE ===
@@ -55,7 +55,10 @@ HTML = '''
     <div id="term"></div>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
-        const socket = io();
+        const socket = io({
+            transports: ['websocket'],  // BẮT BUỘC DÙNG WEBSOCKET
+            reconnectionAttempts: 5
+        });
         const term = document.getElementById('term');
         let buffer = '';
 
@@ -67,10 +70,19 @@ HTML = '''
             term.scrollTop = term.scrollHeight;
         };
 
+        socket.on('connect', () => {
+            write('\\nCTOOL TERMINAL PRO - DÙNG NHƯ LINUX!\\n', 'info');
+            write('HỖ TRỢ: pip install, curl, python, run webhost, ps, stop ...\\n', 'info');
+            write('LỆNH MẪU:\\n', 'info');
+            write('  curl -o CTOOL.py https://raw.githubusercontent.com/C-Dev7929/Tools/refs/heads/main/main-xw.py\\n', 'info');
+            write('  python CTOOL.py\\n', 'info');
+            write('  run webhost\\n', 'info');
+            write('  ps\\n', 'info');
+        });
+
         socket.on('output', (data) => write(data, 'output'));
         socket.on('error', (data) => write(data, 'error'));
         socket.on('info', (data) => write(data, 'info'));
-        socket.on('cmd', (data) => write(data, 'cmd'));
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
@@ -86,14 +98,8 @@ HTML = '''
             e.preventDefault();
         });
 
-        socket.on('connect', () => {
-            write('\\nCTOOL TERMINAL PRO - DÙNG NHƯ LINUX!\\n', 'info');
-            write('HỖ TRỢ: pip install, curl, python, run webhost, ps, stop ...\\n', 'info');
-            write('LỆNH MẪU:\\n', 'info');
-            write('  curl -o CTOOL.py https://raw.githubusercontent.com/C-Dev7929/Tools/refs/heads/main/main-xw.py\\n', 'info');
-            write('  python CTOOL.py\\n', 'info');
-            write('  run webhost\\n', 'info');
-            write('  ps\\n', 'info');
+        socket.on('connect_error', (err) => {
+            write('\\n[ERROR] Không kết nối WebSocket: ' + err.message + '\\n', 'error');
         });
     </script>
 </body>
@@ -162,12 +168,14 @@ def on_connect():
     if master_fd is None:
         threading.Thread(target=start_shell).start()
 
-# === RUN VỚI allow_unsafe_werkzeug=True ===
+# === RUN VỚI EVENTLET + allow_unsafe_werkzeug ===
 if __name__ == '__main__':
+    import eventlet
+    eventlet.monkey_patch()  # BẮT BUỘC
     keep_alive()
     socketio.run(
         app,
         host='0.0.0.0',
         port=int(os.environ.get('PORT', 10000)),
-        allow_unsafe_werkzeug=True  # DÒNG NÀY FIX LỖI
+        allow_unsafe_werkzeug=True
     )
