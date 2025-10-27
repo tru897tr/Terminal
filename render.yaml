@@ -3,7 +3,7 @@ services:
     name: ctool-full-terminal
     env: python
     region: oregon
-    plan: free
+    plan: starter
     buildCommand: pip install -r requirements.txt
     startCommand: ./setup-pyenv.sh && python server.py
     envVars:
