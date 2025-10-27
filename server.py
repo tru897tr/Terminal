@@ -1,4 +1,4 @@
-# server.py - Terminal Web + eventlet + WebSocket thật (gõ lệnh mượt)
+# server.py - Terminal Web + threading + WebSocket (gõ lệnh mượt)
 from flask import Flask, render_template_string
 from flask_socketio import SocketIO, emit
 import pty
@@ -11,12 +11,12 @@ import time
 import signal
 from shell import manager
 
-# === APP + SOCKETIO (DÙNG EVENTLET) ===
+# === APP + SOCKETIO (DÙNG THREADING) ===
 app = Flask(__name__)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    async_mode='eventlet',  # BẮT BUỘC DÙNG EVENTLET
+    async_mode='threading',  # DÙNG THREADING
     logger=True,
     engineio_logger=True
 )
@@ -34,7 +34,7 @@ def keep_alive():
                 time.sleep(300)
         threading.Thread(target=ping, daemon=True).start()
 
-# === HTML TERMINAL ===
+# === HTML TERMINAL (BẮT BUỘC WEBSOCKET) ===
 HTML = '''
 <!DOCTYPE html>
 <html>
@@ -56,7 +56,7 @@ HTML = '''
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
         const socket = io({
-            transports: ['websocket'],  // BẮT BUỘC DÙNG WEBSOCKET
+            transports: ['websocket'],  // BẮT BUỘC WEBSOCKET
             reconnectionAttempts: 5
         });
         const term = document.getElementById('term');
@@ -99,7 +99,7 @@ HTML = '''
         });
 
         socket.on('connect_error', (err) => {
-            write('\\n[ERROR] Không kết nối WebSocket: ' + err.message + '\\n', 'error');
+            write('\\n[ERROR] WebSocket lỗi: ' + err.message + '\\n', 'error');
         });
     </script>
 </body>
@@ -168,10 +168,8 @@ def on_connect():
     if master_fd is None:
         threading.Thread(target=start_shell).start()
 
-# === RUN VỚI EVENTLET + allow_unsafe_werkzeug ===
+# === RUN VỚI allow_unsafe_werkzeug ===
 if __name__ == '__main__':
-    import eventlet
-    eventlet.monkey_patch()  # BẮT BUỘC
     keep_alive()
     socketio.run(
         app,
