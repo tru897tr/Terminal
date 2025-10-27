@@ -18,4 +18,9 @@ fi
 # Dùng Python 3.12.7
 "$HOME/.pyenv/bin/pyenv" global 3.12.7
 
+# Tạo alias CHUẨN
+echo "alias python3.12='$HOME/.pyenv/versions/3.12.7/bin/python'" >> ~/.bashrc
+echo "alias python3.11='$HOME/.pyenv/versions/3.11.9/bin/python'" >> ~/.bashrc
+echo "alias python3.13='$HOME/.pyenv/versions/3.13.0/bin/python'" >> ~/.bashrc
+
 echo "Python 3.12.7 đã sẵn sàng tại $HOME/.pyenv/versions/3.12.7/bin/python"
