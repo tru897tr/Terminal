@@ -1,4 +1,4 @@
-# server.py - Terminal Web + eventlet + threading (ổn định Python 3.11)
+# server.py - Terminal Web + eventlet + threading + allow_unsafe_werkzeug
 from flask import Flask, render_template_string
 from flask_socketio import SocketIO, emit
 import pty
@@ -16,7 +16,7 @@ app = Flask(__name__)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    async_mode='threading',  # DÙNG THREADING THAY EVENTLET
+    async_mode='threading',
     logger=False,
     engineio_logger=False
 )
@@ -162,7 +162,12 @@ def on_connect():
     if master_fd is None:
         threading.Thread(target=start_shell).start()
 
-# === RUN ===
+# === RUN VỚI allow_unsafe_werkzeug=True ===
 if __name__ == '__main__':
     keep_alive()
-    socketio.run(app, host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
+    socketio.run(
+        app,
+        host='0.0.0.0',
+        port=int(os.environ.get('PORT', 10000)),
+        allow_unsafe_werkzeug=True  # DÒNG NÀY FIX LỖI
+    )
