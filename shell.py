@@ -5,6 +5,7 @@ import psutil
 
 class ProcessManager:
     def __init__(self):
+        *
         self.processes = {}
 
     def start(self, name, cmd):
