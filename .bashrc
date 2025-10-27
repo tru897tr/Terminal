@@ -1,4 +1,4 @@
-# .bashrc
+# .bashrc - Kích hoạt pyenv + python3.12
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
