@@ -1,4 +1,4 @@
-# server.py - DÙNG .bashrc → python3.12 sẵn sàng
+# server.py - DÙNG threading (ổn định) + python3.12
 from flask import Flask, render_template_string
 from flask_socketio import SocketIO
 import pty
@@ -14,7 +14,7 @@ app = Flask(__name__)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    async_mode='threading',
+    async_mode='threading',  # DÙNG threading → ỔN ĐỊNH
     logger=True,
     engineio_logger=True
 )
