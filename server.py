@@ -1,4 +1,4 @@
-# server.py - Terminal Web + threading + WebSocket (gõ lệnh mượt)
+# server.py - Terminal Web + Ô nhập + Nút gửi (CHO ĐIỆN THOẠI + MÁY TÍNH)
 from flask import Flask, render_template_string
 from flask_socketio import SocketIO, emit
 import pty
@@ -11,17 +11,15 @@ import time
 import signal
 from shell import manager
 
-# === APP + SOCKETIO (DÙNG THREADING) ===
 app = Flask(__name__)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    async_mode='threading',  # DÙNG THREADING
+    async_mode='threading',
     logger=True,
     engineio_logger=True
 )
 
-# === KEEP ALIVE ===
 def keep_alive():
     url = os.environ.get('RENDER_EXTERNAL_URL')
     if url:
@@ -34,17 +32,21 @@ def keep_alive():
                 time.sleep(300)
         threading.Thread(target=ping, daemon=True).start()
 
-# === HTML TERMINAL (BẮT BUỘC WEBSOCKET) ===
+# === HTML + Ô NHẬP + NÚT GỬI + BÀN PHÍM ẢO ===
 HTML = '''
 <!DOCTYPE html>
 <html>
 <head>
     <title>CTOOL TERMINAL PRO</title>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
-        body, html { height:100%; background:#000; color:#0f0; font-family:'Courier New', monospace; }
-        #term { width:100%; height:100%; padding:15px; overflow-y:auto; line-height:1.5; font-size:14px; }
+        body, html { height:100%; background:#000; color:#0f0; font-family:'Courier New', monospace; overflow:hidden; }
+        #output { width:100%; height:calc(100% - 60px); padding:15px; overflow-y:auto; line-height:1.5; font-size:16px; }
+        #input-area { position:fixed; bottom:0; width:100%; background:#111; padding:10px; display:flex; gap:10px; }
+        #cmd { flex:1; background:#000; color:#0f0; border:1px solid #0f0; padding:10px; font-size:16px; outline:none; }
+        #send { background:#0f0; color:#000; border:none; padding:0 20px; font-weight:bold; cursor:pointer; }
         .cmd { color: #0ff; }
         .output { color: #fff; }
         .error { color: #f55; }
@@ -52,55 +54,61 @@ HTML = '''
     </style>
 </head>
 <body>
-    <div id="term"></div>
+    <div id="output"></div>
+    <div id="input-area">
+        <input type="text" id="cmd" placeholder="Nhập lệnh (ls, pip install...)" autofocus autocomplete="off">
+        <button id="send">GỬI</button>
+    </div>
+
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
-        const socket = io({
-            transports: ['websocket'],  // BẮT BUỘC WEBSOCKET
-            reconnectionAttempts: 5
-        });
-        const term = document.getElementById('term');
-        let buffer = '';
+        const socket = io({ transports: ['websocket'] });
+        const output = document.getElementById('output');
+        const input = document.getElementById('cmd');
+        const sendBtn = document.getElementById('send');
 
         const write = (text, type = 'output') => {
             const div = document.createElement('div');
             div.className = type;
             div.innerHTML = text.replace(/\\n/g, '<br>').replace(/ /g, '&nbsp;');
-            term.appendChild(div);
-            term.scrollTop = term.scrollHeight;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
         };
 
+        const sendCommand = () => {
+            const cmd = input.value.trim();
+            if (!cmd) return;
+            write('> ' + cmd, 'cmd');
+            socket.emit('command', cmd);
+            input.value = '';
+        };
+
+        sendBtn.onclick = sendCommand;
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') sendCommand();
+        });
+
         socket.on('connect', () => {
-            write('\\nCTOOL TERMINAL PRO - DÙNG NHƯ LINUX!\\n', 'info');
+            write('\\nCTOOL TERMINAL PRO - DÙNG TRÊN ĐIỆN THOẠI & MÁY TÍNH!\\n', 'info');
             write('HỖ TRỢ: pip install, curl, python, run webhost, ps, stop ...\\n', 'info');
             write('LỆNH MẪU:\\n', 'info');
-            write('  curl -o CTOOL.py https://raw.githubusercontent.com/C-Dev7929/Tools/refs/heads/main/main-xw.py\\n', 'info');
-            write('  python CTOOL.py\\n', 'info');
+            write('  curl -o tool.py https://...\\n', 'info');
+            write('  python tool.py\\n', 'info');
             write('  run webhost\\n', 'info');
             write('  ps\\n', 'info');
+            input.focus();
         });
 
         socket.on('output', (data) => write(data, 'output'));
         socket.on('error', (data) => write(data, 'error'));
         socket.on('info', (data) => write(data, 'info'));
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                write('> ' + buffer, 'cmd');
-                socket.emit('command', buffer.trim());
-                buffer = '';
-                e.preventDefault();
-            } else if (e.key === 'Backspace') {
-                buffer = buffer.slice(0, -1);
-            } else if (e.key.length === 1) {
-                buffer += e.key;
-            }
-            e.preventDefault();
+        socket.on('connect_error', (err) => {
+            write('\\n[ERROR] Kết nối lỗi: ' + err.message + '\\n', 'error');
         });
 
-        socket.on('connect_error', (err) => {
-            write('\\n[ERROR] WebSocket lỗi: ' + err.message + '\\n', 'error');
-        });
+        // Bàn phím ảo hiện khi click vào ô
+        input.addEventListener('focus', () => input.focus());
     </script>
 </body>
 </html>
@@ -168,7 +176,6 @@ def on_connect():
     if master_fd is None:
         threading.Thread(target=start_shell).start()
 
-# === RUN VỚI allow_unsafe_werkzeug ===
 if __name__ == '__main__':
     keep_alive()
     socketio.run(
