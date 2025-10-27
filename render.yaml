@@ -4,7 +4,7 @@ services:
     env: python
     region: oregon
     plan: starter
-    buildCommand: echo "Build: Không cần cài gói"
+    buildCommand: rm -rf .venv && echo "Xóa .venv cũ"
     startCommand: ./setup-pyenv.sh && pip install -r requirements.txt && python server.py
     envVars:
       PYTHON_VERSION: 3.11.9
