@@ -1,4 +1,4 @@
-# server.py - DÙNG THREADING MẶC ĐỊNH (KHÔNG DÙNG eventlet)
+# server.py - DÙNG THREADING MẶC ĐỊNH (KHÔNG eventlet)
 from flask import Flask, render_template_string
 from flask_socketio import SocketIO
 import pty
@@ -11,7 +11,7 @@ import time
 from shell import manager
 
 app = Flask(__name__)
-# DÙNG THREADING MẶC ĐỊNH → KHÔNG CẦN eventlet
+# KHÔNG DÙNG async_mode → threading mặc định
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 def keep_alive():
