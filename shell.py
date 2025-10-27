@@ -17,7 +17,6 @@ class ProcessManager:
         if name in [p["name"] for p in self.processes.values()]:
             return f"[ERROR] '{name}' đã tồn tại!"
         try:
-            # Dùng nohup + & để chạy ngầm
             full_cmd = f"nohup {cmd} > {name}.log 2>&1 & echo $!"
             proc = subprocess.Popen(full_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd='/opt/render/project/src')
             time.sleep(1)
@@ -48,7 +47,6 @@ class ProcessManager:
                 pass
         self.processes.clear()
         self.save_state()
-        # Xóa log
         for f in os.listdir('/opt/render/project/src'):
             if f.endswith('.log'):
                 os.remove(f)
