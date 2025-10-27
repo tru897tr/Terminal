@@ -1,4 +1,4 @@
-# server.py - DÙNG threading (KHÔNG DÙNG eventlet)
+# server.py - DÙNG THREADING MẶC ĐỊNH (KHÔNG DÙNG eventlet)
 from flask import Flask, render_template_string
 from flask_socketio import SocketIO
 import pty
@@ -11,13 +11,8 @@ import time
 from shell import manager
 
 app = Flask(__name__)
-socketio = SocketIO(
-    app,
-    cors_allowed_origins="*",
-    async_mode='threading',  # DÙNG threading → ỔN ĐỊNH
-    logger=True,
-    engineio_logger=True
-)
+# DÙNG THREADING MẶC ĐỊNH → KHÔNG CẦN eventlet
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 def keep_alive():
     url = os.environ.get('RENDER_EXTERNAL_URL')
