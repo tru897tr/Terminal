@@ -18,7 +18,7 @@ fi
 # Dùng Python 3.12.7
 "$HOME/.pyenv/bin/pyenv" global 3.12.7
 
-# Tạo alias CHUẨN → lưu vào .bashrc
+# Tạo .bashrc với alias
 cat > ~/.bashrc << 'EOF'
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
@@ -28,7 +28,6 @@ pyenv global 3.12.7
 
 alias python3.12="$PYENV_ROOT/versions/3.12.7/bin/python"
 alias python3.11="$PYENV_ROOT/versions/3.11.9/bin/python"
-alias python3.13="$PYENV_ROOT/versions/3.13.0/bin/python"
 alias python="python3.12"
 alias pip="python3.12 -m pip"
 EOF
