@@ -1,4 +1,4 @@
-# server.py - CÀI pyenv TRONG SHELL → CHẠY python CTOOL.py
+# server.py - Chạy ngầm + Dừng tất cả + Tải lại trạng thái
 from flask import Flask, render_template_string
 from flask_socketio import SocketIO
 import pty
@@ -41,10 +41,11 @@ HTML = '''
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body, html { height:100%; background:#000; color:#0f0; font-family:'Courier New', monospace; }
-        #output { width:100%; height:calc(100% - 60px); padding:15px; overflow-y:auto; font-size:16px; }
-        #input-area { position:fixed; bottom:0; width:100%; background:#111; padding:10px; display:flex; gap:10px; }
-        #cmd { flex:1; background:#000; color:#0f0; border:1px solid #0f0; padding:10px; font-size:16px; outline:none; }
-        #send { background:#0f0; color:#000; border:none; padding:0 20px; font-weight:bold; cursor:pointer; }
+        #output { width:100%; height:calc(100% - 100px); padding:15px; overflow-y:auto; font-size:16px; }
+        #input-area { position:fixed; bottom:0; width:100%; background:#111; padding:10px; display:flex; gap:10px; flex-wrap:wrap; }
+        #cmd { flex:1; min-width:200px; background:#000; color:#0f0; border:1px solid #0f0; padding:10px; font-size:16px; outline:none; }
+        #send, #stop-all { background:#0f0; color:#000; border:none; padding:0 20px; font-weight:bold; cursor:pointer; }
+        #stop-all { background:#f55; }
         .cmd { color: #0ff; }
         .output { color: #fff; }
         .error { color: #f55; }
@@ -54,8 +55,9 @@ HTML = '''
 <body>
     <div id="output"></div>
     <div id="input-area">
-        <input type="text" id="cmd" placeholder="python CTOOL.py, pip install..." autofocus>
+        <input type="text" id="cmd" placeholder="python3.12 CTOOL.py, pip install..." autofocus>
         <button id="send">GỬI</button>
+        <button id="stop-all">DỪNG TẤT CẢ & XÓA</button>
     </div>
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -64,6 +66,7 @@ HTML = '''
         const output = document.getElementById('output');
         const input = document.getElementById('cmd');
         const sendBtn = document.getElementById('send');
+        const stopBtn = document.getElementById('stop-all');
 
         const write = (text, type = 'output') => {
             const div = document.createElement('div');
@@ -86,12 +89,20 @@ HTML = '''
             if (e.key === 'Enter') sendCommand();
         });
 
+        stopBtn.onclick = () => {
+            if (confirm("Dừng tất cả & xóa dữ liệu?")) {
+                socket.emit('stop_all');
+            }
+        };
+
         socket.on('connect', () => {
-            write('\\nCTOOL TERMINAL PRO - CHẠY MỌI TOOL!\\n', 'info');
-            write('DÙNG: python CTOOL.py | pip install | curl | run webhost\\n', 'info');
+            write('\\nCTOOL TERMINAL PRO - CHẠY NGẦM 24/24!\\n', 'info');
+            write('HỖ TRỢ: python3.11, python3.12, python3.13, pip, curl, run, ps, stop\\n', 'info');
             write('LỆNH MẪU:\\n', 'info');
             write('  curl -o CTOOL.py https://raw.githubusercontent.com/C-Dev7929/Tools/refs/heads/main/main-xw.py\\n', 'info');
-            write('  python CTOOL.py\\n', 'info');
+            write('  python3.12 CTOOL.py\\n', 'info');
+            write('  ps  → Xem tiến trình chạy ngầm\\n', 'info');
+            write('  DỪNG TẤT CẢ → Xóa sạch\\n', 'info');
             input.focus();
         });
 
@@ -113,34 +124,25 @@ proc = None
 def start_shell():
     global master_fd, proc
     master_fd, slave_fd = pty.openpty()
-
-    # === CÀI pyenv + python3.12 TRỰC TIẾP TRONG SHELL ===
-    init_commands = [
-        'export PYENV_ROOT="$HOME/.pyenv"',
-        'export PATH="$PYENV_ROOT/bin:$PATH"',
-        'eval "$(pyenv init -)"',
-        'eval "$(pyenv virtualenv-init -)"',
-        'if ! pyenv versions | grep -q "3.12.7"; then pyenv install 3.12.7; fi',
-        'pyenv global 3.12.7',
-        'alias python="python3.12"',
-        'alias pip="python3.12 -m pip"',
-        'echo "Python 3.12.7 đã sẵn sàng!"',
-        'python --version'
-    ]
-
-    # Tạo shell với lệnh khởi tạo
-    shell_cmd = '/bin/bash'
     proc = subprocess.Popen(
-        [shell_cmd], stdin=slave_fd, stdout=slave_fd, stderr=slave_fd,
+        ['/bin/bash'], stdin=slave_fd, stdout=slave_fd, stderr=slave_fd,
         bufsize=0, preexec_fn=os.setsid, cwd='/opt/render/project/src'
     )
 
-    # Gửi lệnh khởi tạo
-    for cmd in init_commands:
-        os.write(master_fd, (cmd + '\n').encode('utf-8'))
-        time.sleep(0.5)
+    # Gửi lệnh khởi tạo Python
+    init_cmds = [
+        'export PYENV_ROOT="$HOME/.pyenv"',
+        'export PATH="$PYENV_ROOT/bin:$PATH"',
+        'eval "$(pyenv init -)"',
+        'alias python3.11="$HOME/.pyenv/versions/3.11.9/bin/python"',
+        'alias python3.12="$HOME/.pyenv/versions/3.12.7/bin/python"',
+        'alias python3.13="$HOME/.pyenv/versions/3.13.0/bin/python"',
+        'echo "Python 3.11, 3.12, 3.13 sẵn sàng!"'
+    ]
+    for cmd in init_cmds:
+        os.write(master_fd, (cmd + '\n').encode())
+        time.sleep(0.3)
 
-    # Đọc output
     def read():
         while True:
             try:
@@ -180,11 +182,18 @@ def handle_command(cmd):
             except:
                 socketio.emit('error', "[ERROR] Lỗi gửi lệnh")
 
+@socketio.on('stop_all')
+def handle_stop_all():
+    msg = manager.stop_all()
+    socketio.emit('info', msg)
+
 @socketio.on('connect')
 def on_connect():
     global master_fd
     if master_fd is None:
         threading.Thread(target=start_shell).start()
+    # Tải lại trạng thái
+    socketio.emit('info', manager.list())
 
 if __name__ == '__main__':
     keep_alive()
