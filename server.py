@@ -123,23 +123,19 @@ def start_shell():
     global master_fd, proc
     master_fd, slave_fd = pty.openpty()
     proc = subprocess.Popen(
-        ['/bin/bash'], stdin=slave_fd, stdout=slave_fd, stderr=slave_fd,
+        ['/bin/bash'], stdin=slave_fd, stdout=slav
+e_fd, stderr=slave_fd,
         bufsize=0, preexec_fn=os.setsid, cwd='/opt/render/project/src'
     )
 
-    # Alias CHUẨN với $HOME/.pyenv
+    # DÙNG $HOME/.pyenv + .bashrc
     init_cmds = [
-        'export PYENV_ROOT="$HOME/.pyenv"',
-        'export PATH="$PYENV_ROOT/bin:$PATH"',
-        'eval "$(pyenv init -)"',
-        'alias python3.12="$HOME/.pyenv/versions/3.12.7/bin/python"',
-        'alias python3.11="$HOME/.pyenv/versions/3.11.9/bin/python"',
-        'alias python3.13="$HOME/.pyenv/versions/3.13.0/bin/python"',
+        'source ~/.bashrc',
         'echo "Python 3.12 đã sẵn sàng: $(python3.12 --version)"'
     ]
     for cmd in init_cmds:
         os.write(master_fd, (cmd + '\n').encode())
-        time.sleep(0.3)
+        time.sleep(0.5)
 
     def read():
         while True:
