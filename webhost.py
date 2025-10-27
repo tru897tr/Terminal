@@ -1,20 +1,11 @@
-# webhost.py - Host web server bất kỳ
-from flask import Flask, jsonify
-import threading
-import time
+# webhost.py - Web server mẫu
+from flask import Flask
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "<h1>Web Server đang chạy trên Render!</h1><p>Dùng terminal để host nhiều web khác.</p>"
-
-@app.route('/api/status')
-def status():
-    return jsonify({"status": "OK", "time": time.time()})
-
-def run_web():
-    app.run(host='0.0.0.0', port=5000, use_reloader=False)
+    return "<h1>Web Server đang chạy!</h1><p>Port: 5000</p>"
 
 if __name__ == '__main__':
-    run_web()
+    app.run(host='0.0.0.0', port=5000)
