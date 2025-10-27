@@ -4,7 +4,7 @@ services:
     env: python
     region: oregon
     plan: starter
-    buildCommand: pip install -r requirements.txt
+    buildCommand: ./install-pyenv.sh && pip install -r requirements.txt
     startCommand: python server.py
     envVars:
       PYTHON_VERSION: 3.11.9
