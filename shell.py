@@ -1,4 +1,3 @@
-# shell.py - Quản lý nhiều tiến trình
 import subprocess
 import os
 import signal
