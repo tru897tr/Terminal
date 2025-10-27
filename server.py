@@ -1,4 +1,4 @@
-# server.py - DÙNG threading (ổn định) + python3.12
+# server.py - DÙNG threading (KHÔNG DÙNG eventlet)
 from flask import Flask, render_template_string
 from flask_socketio import SocketIO
 import pty
